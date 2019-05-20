@@ -5,7 +5,7 @@ WebSocket接続をうまくやってくれます、一定期間データが来�
 
 ## 依存
 ```sbt:build.sbt
-resolvers += "Maven Repo on github" at "https://BambooTuna.github.io/WebSocketManage/",
+resolvers += "Maven Repo on github" at "https://BambooTuna.github.io/WebSocketManager/",
 libraryDependencies = "com.github.BambooTuna" %% "websocketmanager" % "1.0.0-SNAPSHOT"
 ```
 
@@ -18,7 +18,7 @@ case class WebSocketOptions(
                              pingInterval: FiniteDuration = 5 seconds,
                              pingTimeout: FiniteDuration = 10 seconds,
                              pingData: String = "ping",
-                             logger: Logger = LoggerFactory.getLogger("WebSocketManage")
+                             logger: Logger = LoggerFactory.getLogger("WebSocketManager")
                            ) {
   require(pingTimeout > pingInterval)
 }

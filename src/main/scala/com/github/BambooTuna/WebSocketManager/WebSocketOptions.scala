@@ -9,7 +9,7 @@ case class WebSocketOptions(
                              pingInterval: FiniteDuration = 5 seconds,
                              pingTimeout: FiniteDuration = 10 seconds,
                              pingData: String = "ping",
-                             logger: Logger = LoggerFactory.getLogger("WebSocketManage")
+                             logger: Logger = LoggerFactory.getLogger("WebSocketManager")
                            ) {
   require(pingTimeout > pingInterval)
 }
