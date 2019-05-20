@@ -3,9 +3,6 @@ package com.github.BambooTuna.WebSocketManage
 import akka.actor.ActorRef
 
 object WebSocketProtocol {
-  sealed trait WebSocketError
-  case object SendMessageError extends WebSocketError
-  class WebSocketRuntimeException(e: String) extends RuntimeException(e)
 
   sealed trait Receive
   case object ConnectStart extends Receive
@@ -17,5 +14,10 @@ object WebSocketProtocol {
   case class ConnectedSucceeded(actorRef: ActorRef) extends OutPut
   case class OnMessage(mes: String) extends OutPut
   case object Closed extends OutPut
+
+  sealed trait InternalError
+  case object SendMessageError extends InternalError
+
+  class WebSocketException(e: String) extends Exception(e)
 
 }

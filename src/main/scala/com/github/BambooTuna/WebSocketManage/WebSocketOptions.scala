@@ -1,13 +1,15 @@
 package com.github.BambooTuna.WebSocketManage
 
 import org.slf4j.{Logger, LoggerFactory}
-
+import scala.concurrent.duration._
 case class WebSocketOptions(
                              host: String = "",
                              reConnect: Boolean = true,
-                             pingInterval: Int = 10,
-                             pingTimeout: Int = 20,
-                             logger: Logger = LoggerFactory.getLogger(getClass)
+                             reConnectInterval: FiniteDuration = 5 seconds,
+                             pingInterval: FiniteDuration = 1 seconds,
+                             pingTimeout: FiniteDuration = 5 seconds,
+                             logger: Logger = LoggerFactory.getLogger("WebSocketManage")
                            ) {
   require(pingTimeout > pingInterval)
 }
+

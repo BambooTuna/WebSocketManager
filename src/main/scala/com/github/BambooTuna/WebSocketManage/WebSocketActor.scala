@@ -1,6 +1,6 @@
 package com.github.BambooTuna.WebSocketManage
 
-import akka.actor.{Actor, ActorRef, ActorSystem}
+import akka.actor.{Actor, ActorRef, ActorSystem, Cancellable}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.ws._
@@ -18,52 +18,42 @@ class WebSocketActor(val webSocketOptions: WebSocketOptions)(implicit materializ
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
   
   var wsInstance: Option[ActorRef] = None
-  var timeoutCount = 0
+  var timeoutCount: FiniteDuration = (0 seconds)
+
+  var timer: Option[Cancellable] = None
 
   override def receive = {
     case ConnectStart => connect()
     case SendMessage(m) => send(m)
     case TimeoutCount =>
-      timeoutCount += 1
+      println(timeoutCount.toString())
+      timeoutCount = timeoutCount.plus(1 seconds)
       if (timeoutCount > webSocketOptions.pingTimeout) {
-        timeoutCount = 0
-        throw new WebSocketRuntimeException(s"Cannot get message timeout.")
+        timer.foreach(stopTimer)
+        timeoutCount = (0 seconds)
+        self ! OnError(new WebSocketException(s"Cannot get message timeout."))
       }
     case OnError(exception) => throw exception
+    case Closed => //self ! OnError(new WebSocketException(s"Connection closed."))
     case other => webSocketOptions.logger.info(s"Get not defined method: $other")
   }
 
-  override def preStart() = {
-    super.preStart()
-    if (webSocketOptions.reConnect) self ! ConnectStart
-    webSocketOptions.logger.info("START")
-  }
-
-  override def postStop() = {
-    super.postStop()
-    wsInstance.foreach(w => context.stop(w))
-    webSocketOptions.logger.info("STOP")
-  }
-
-  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    super.preRestart(reason, None)
-    webSocketOptions.logger.info("RESTART")
-  }
-
   private def connect(): Unit = {
-    webSocketOptions.logger.info("==========Connection Start==========")
-    system.scheduler.schedule(1 seconds,  1 seconds, self, TimeoutCount)
     val ((ws, upgradeResponse), closed) = wsRunner().run()
     wsInstance = Some(ws)
     val connected = upgradeResponse.flatMap { upgrade =>
       if (upgrade.response.status == StatusCodes.SwitchingProtocols) {
         Future.successful(Done)
       } else {
-        Future.failed(new WebSocketRuntimeException(s"Connection failed: ${upgrade.response.status}"))
+        Future.failed(new WebSocketException(s"Connection failed: ${upgrade.response.status}"))
       }
     }
+
     connected.onComplete {
-      case Success(_) => context.parent ! ConnectedSucceeded(self)
+      case Success(_) =>
+        webSocketOptions.logger.info("==========Connection Succeeded==========")
+        setTimer()
+        context.parent ! ConnectedSucceeded(self)
       case Failure(exception) => throw exception
     }
 
@@ -72,8 +62,8 @@ class WebSocketActor(val webSocketOptions: WebSocketOptions)(implicit materializ
     }
   }
 
-  private def send(data: String): Either[WebSocketError, Unit] = {
-    wsInstance.toRight(SendMessageError).map(_ ! TextMessage.Strict(data))
+  private def send(data: String): Unit = {
+    wsInstance.fold(self ! OnError(new WebSocketException("Cannot get webSocket Instance.")))(_ ! TextMessage.Strict(data))
   }
 
   private def wsRunner() = {
@@ -82,20 +72,20 @@ class WebSocketActor(val webSocketOptions: WebSocketOptions)(implicit materializ
 
     val messageSource: Source[Message, ActorRef] = Source
       .actorRef[TextMessage.Strict](bufferSize = 1000, OverflowStrategy.fail)
-      .keepAlive(webSocketOptions.pingInterval seconds, () => TextMessage.Strict("ping"))
+      .keepAlive(webSocketOptions.pingInterval, () => TextMessage.Strict("ping"))
 
     val messageSink = Flow[Message]
       .map{
-        case TextMessage.Strict(m) => context.parent ! OnMessage(m)
-        case BinaryMessage.Strict(m) => context.parent ! OnMessage(m.utf8String)
+        case TextMessage.Strict(m) => returnMessage(m)
+        case BinaryMessage.Strict(m) => returnMessage(m.utf8String)
         case TextMessage.Streamed(stream) =>
           stream
             .limit(100)                   // Max frames we are willing to wait for
             .completionTimeout(5 seconds) // Max time until last frame
             .runFold("")(_ + _)
-            .map(context.parent ! OnMessage(_))
-        case other => self ! OnError(new WebSocketRuntimeException(s"Receive Strange Data: $other"))
-      }.map(_ => timeoutCount = 0)
+            .map(returnMessage)
+        case other => self ! OnError(new WebSocketException(s"Receive Strange Data: $other"))
+      }.map(_ => timeoutCount = 0 seconds)
 
     messageSource
       .viaMat(webSocketFlow)(Keep.both)
@@ -103,10 +93,44 @@ class WebSocketActor(val webSocketOptions: WebSocketOptions)(implicit materializ
       .toMat(Sink.ignore)(Keep.both)
   }
 
+  def returnMessage(message: String): Unit = {
+    context.parent ! OnMessage(message)
+  }
+
+  override def preStart() = {
+    super.preStart()
+    timer.foreach(stopTimer)
+    webSocketOptions.logger.info("START")
+  }
+
+  override def postStop() = {
+    super.postStop()
+    wsInstance.foreach(w => context.stop(w))
+    timer.foreach(stopTimer)
+    webSocketOptions.logger.info("STOP")
+  }
+
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+    super.preRestart(reason, None)
+    webSocketOptions.logger.info("RESTARTING Wait...")
+    Thread.sleep(webSocketOptions.reConnectInterval.toMillis)
+    webSocketOptions.logger.info("RESTART")
+    self ! ConnectStart
+  }
+
+  private def setTimer(): Unit = {
+    timer.foreach(stopTimer)
+    timer = Some(system.scheduler.schedule(1 seconds,  1 seconds, self, TimeoutCount))
+  }
+
+  private def stopTimer(t: Cancellable): Unit = {
+    t.cancel()
+  }
+
 }
 
 object WebSocketActor {
-  val ActorName = "WebSocketActor"
 
+  val ActorName = "WebSocketActor"
 
 }
