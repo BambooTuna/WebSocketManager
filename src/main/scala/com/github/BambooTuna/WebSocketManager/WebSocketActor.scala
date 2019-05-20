@@ -27,7 +27,6 @@ class WebSocketActor(val webSocketOptions: WebSocketOptions)(implicit materializ
     case ConnectStart => connect()
     case SendMessage(m) => send(m)
     case TimeoutCount =>
-      println(timeoutCount.toString())
       timeoutCount = timeoutCount.plus(1 seconds)
       if (timeoutCount > webSocketOptions.pingTimeout) {
         timer.foreach(stopTimer)
