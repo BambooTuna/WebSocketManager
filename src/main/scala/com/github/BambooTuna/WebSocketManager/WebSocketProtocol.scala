@@ -1,4 +1,4 @@
-package com.github.BambooTuna.WebSocketManage
+package com.github.BambooTuna.WebSocketManager
 
 import akka.actor.ActorRef
 

@@ -1,6 +1,6 @@
-package com.github.BambooTuna.WebSocketManage
+package com.github.BambooTuna.WebSocketManager
 
-import com.github.BambooTuna.WebSocketManage.WebSocketProtocol._
+import com.github.BambooTuna.WebSocketManager.WebSocketProtocol._
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Cancellable}
 import akka.http.scaladsl.Http

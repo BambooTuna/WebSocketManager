@@ -1,5 +1,5 @@
-import com.github.BambooTuna.WebSocketManage.WebSocketProtocol.{ConnectStart, ConnectedSucceeded, OnMessage, SendMessage}
-import com.github.BambooTuna.WebSocketManage.{WebSocketManager, WebSocketOptions}
+import com.github.BambooTuna.WebSocketManager.WebSocketProtocol.{ConnectStart, ConnectedSucceeded, OnMessage, SendMessage}
+import com.github.BambooTuna.WebSocketManager.{WebSocketManager, WebSocketOptions}
 
 import akka.actor.SupervisorStrategy._
 import akka.actor.{Actor, ActorSystem, OneForOneStrategy, Props}
