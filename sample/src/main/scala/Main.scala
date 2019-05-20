@@ -1,8 +1,10 @@
-import akka.actor.SupervisorStrategy.{Restart, Stop}
+import com.github.BambooTuna.WebSocketManage.WebSocketProtocol.{ConnectStart, ConnectedSucceeded, OnMessage, SendMessage}
+import com.github.BambooTuna.WebSocketManage.{WebSocketManager, WebSocketOptions}
+
+import akka.actor.SupervisorStrategy._
 import akka.actor.{Actor, ActorSystem, OneForOneStrategy, Props}
 import akka.stream.ActorMaterializer
-import com.github.BambooTuna.WebSocketManage.WebSocketProtocol.{ConnectStart, ConnectedSucceeded, OnMessage, SendMessage}
-import com.github.BambooTuna.WebSocketManage.{WebSocketActor, WebSocketManager, WebSocketOptions}
+
 import io.circe._
 import io.circe.syntax._
 import io.circe.generic.auto._

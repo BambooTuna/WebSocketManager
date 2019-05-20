@@ -6,8 +6,9 @@ case class WebSocketOptions(
                              host: String = "",
                              reConnect: Boolean = true,
                              reConnectInterval: FiniteDuration = 5 seconds,
-                             pingInterval: FiniteDuration = 1 seconds,
-                             pingTimeout: FiniteDuration = 5 seconds,
+                             pingInterval: FiniteDuration = 5 seconds,
+                             pingTimeout: FiniteDuration = 10 seconds,
+                             pingData: String = "ping",
                              logger: Logger = LoggerFactory.getLogger("WebSocketManage")
                            ) {
   require(pingTimeout > pingInterval)

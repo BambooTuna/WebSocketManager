@@ -1,5 +1,7 @@
 package com.github.BambooTuna.WebSocketManage
 
+import com.github.BambooTuna.WebSocketManage.WebSocketProtocol._
+
 import akka.actor.{Actor, ActorRef, ActorSystem, Cancellable}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes
@@ -7,7 +9,6 @@ import akka.http.scaladsl.model.ws._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.{ActorMaterializer, OverflowStrategy}
 import akka.Done
-import com.github.BambooTuna.WebSocketManage.WebSocketProtocol._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -72,7 +73,7 @@ class WebSocketActor(val webSocketOptions: WebSocketOptions)(implicit materializ
 
     val messageSource: Source[Message, ActorRef] = Source
       .actorRef[TextMessage.Strict](bufferSize = 1000, OverflowStrategy.fail)
-      .keepAlive(webSocketOptions.pingInterval, () => TextMessage.Strict("ping"))
+      .keepAlive(webSocketOptions.pingInterval, () => TextMessage.Strict(webSocketOptions.pingData))
 
     val messageSink = Flow[Message]
       .map{
