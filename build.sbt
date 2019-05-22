@@ -14,7 +14,7 @@ lazy val root =
     .settings(commonSettings)
     .settings(
       name := "websocketmanager",
-      version := "1.0.1-SNAPSHOT",
+      version := "1.0.2-SNAPSHOT",
       crossScalaVersions := Seq("2.11.12", "2.12.4"),
       libraryDependencies ++= Seq(
         

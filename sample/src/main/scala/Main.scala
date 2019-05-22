@@ -3,24 +3,21 @@ import com.github.BambooTuna.WebSocketManager.{WebSocketManager, WebSocketOption
 
 import akka.actor.SupervisorStrategy._
 import akka.actor.{Actor, ActorSystem, OneForOneStrategy, Props}
-import akka.stream.ActorMaterializer
 
-import io.circe._
 import io.circe.syntax._
 import io.circe.generic.auto._
 
 object Main extends App {
   implicit val actorSystem = ActorSystem()
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
-  actorSystem.actorOf(Props(classOf[TestActor], materializer), "TestActor")
+  actorSystem.actorOf(Props(classOf[TestActor]), "TestActor")
 }
 
 
-class TestActor(implicit materializer: ActorMaterializer) extends Actor {
+class TestActor extends Actor {
 
   val webSocketManager = context.actorOf(Props(classOf[WebSocketManager], WebSocketOptions(
     host = "wss://ws.lightstream.bitflyer.com/json-rpc"
-  ), materializer), WebSocketManager.ActorName)
+  )), WebSocketManager.ActorName)
   webSocketManager ! ConnectStart
 
   case class Channel(channel: String)

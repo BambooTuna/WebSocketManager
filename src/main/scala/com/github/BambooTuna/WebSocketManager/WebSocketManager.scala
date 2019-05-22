@@ -8,11 +8,12 @@ import akka.actor.SupervisorStrategy.{Restart, Stop}
 
 import scala.concurrent.ExecutionContextExecutor
 
-class WebSocketManager(val webSocketOptions: WebSocketOptions)(implicit materializer: ActorMaterializer) extends Actor {
+class WebSocketManager(val webSocketOptions: WebSocketOptions) extends Actor {
   implicit val system: ActorSystem = context.system
+  implicit val materializer: ActorMaterializer            = ActorMaterializer()
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
-  val webSocketActor = context.actorOf(Props(classOf[WebSocketActor], webSocketOptions, materializer), WebSocketActor.ActorName)
+  val webSocketActor = context.actorOf(Props(classOf[WebSocketActor], webSocketOptions), WebSocketActor.ActorName)
 
   override def receive = {
     case ConnectStart => webSocketActor ! ConnectStart

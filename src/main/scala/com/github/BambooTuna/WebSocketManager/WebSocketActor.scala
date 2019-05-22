@@ -14,8 +14,9 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
-class WebSocketActor(val webSocketOptions: WebSocketOptions)(implicit materializer: ActorMaterializer) extends Actor {
+class WebSocketActor(val webSocketOptions: WebSocketOptions) extends Actor {
   implicit val system: ActorSystem = context.system
+  implicit val materializer: ActorMaterializer            = ActorMaterializer()
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
   
   var wsInstance: Option[ActorRef] = None
