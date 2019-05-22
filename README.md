@@ -6,7 +6,7 @@ WebSocket接続をうまくやってくれます、一定期間データが来�
 ## 依存
 ```sbt:build.sbt
 resolvers += "Maven Repo on github" at "https://BambooTuna.github.io/WebSocketManager/",
-libraryDependencies = "com.github.BambooTuna" %% "websocketmanager" % "1.0.0-SNAPSHOT"
+libraryDependencies = "com.github.BambooTuna" %% "websocketmanager" % "1.0.-SNAPSHOT"
 ```
 
 ## Options
