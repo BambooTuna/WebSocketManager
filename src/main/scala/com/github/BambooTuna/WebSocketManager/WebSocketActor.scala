@@ -20,9 +20,9 @@ class WebSocketActor(val webSocketOptions: WebSocketOptions) extends Actor {
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
   
   var wsInstance: Option[ActorRef] = None
-  var timeoutCount: FiniteDuration = (0 seconds)
 
-  var timer: Option[Cancellable] = None
+  var timeoutCount = 0.seconds
+  val timer = system.scheduler.schedule(1.seconds,  1.seconds, self, TimeoutCount)
 
   override def receive = {
     case ConnectStart => connect()
@@ -30,12 +30,14 @@ class WebSocketActor(val webSocketOptions: WebSocketOptions) extends Actor {
     case TimeoutCount =>
       timeoutCount = timeoutCount.plus(1 seconds)
       if (timeoutCount > webSocketOptions.pingTimeout) {
-        timer.foreach(stopTimer)
-        timeoutCount = (0 seconds)
+        timer.cancel()
+        timeoutCount = 0.seconds
         self ! OnError(new WebSocketException(s"Cannot get message timeout."))
       }
     case OnError(exception) => throw exception
-    case Closed => //self ! OnError(new WebSocketException(s"Connection closed."))
+    case Closed =>
+      if (webSocketOptions.reConnect) self ! OnError(new WebSocketException(s"Connection closed."))
+      else context.parent ! Closed
     case other => webSocketOptions.logger.info(s"Get not defined method: $other")
   }
 
@@ -53,7 +55,6 @@ class WebSocketActor(val webSocketOptions: WebSocketOptions) extends Actor {
     connected.onComplete {
       case Success(_) =>
         webSocketOptions.logger.info("==========Connection Succeeded==========")
-        setTimer()
         context.parent ! ConnectedSucceeded(self)
       case Failure(exception) => throw exception
     }
@@ -86,7 +87,7 @@ class WebSocketActor(val webSocketOptions: WebSocketOptions) extends Actor {
             .runFold("")(_ + _)
             .map(returnMessage)
         case other => self ! OnError(new WebSocketException(s"Receive Strange Data: $other"))
-      }.map(_ => timeoutCount = 0 seconds)
+      }.map(_ => timeoutCount = 0.seconds)
 
     messageSource
       .viaMat(webSocketFlow)(Keep.both)
@@ -100,14 +101,13 @@ class WebSocketActor(val webSocketOptions: WebSocketOptions) extends Actor {
 
   override def preStart() = {
     super.preStart()
-    timer.foreach(stopTimer)
     webSocketOptions.logger.info("START")
   }
 
   override def postStop() = {
     super.postStop()
     wsInstance.foreach(w => context.stop(w))
-    timer.foreach(stopTimer)
+    timer.cancel()
     webSocketOptions.logger.info("STOP")
   }
 
@@ -117,15 +117,6 @@ class WebSocketActor(val webSocketOptions: WebSocketOptions) extends Actor {
     Thread.sleep(webSocketOptions.reConnectInterval.toMillis)
     webSocketOptions.logger.info("RESTART")
     self ! ConnectStart
-  }
-
-  private def setTimer(): Unit = {
-    timer.foreach(stopTimer)
-    timer = Some(system.scheduler.schedule(1 seconds,  1 seconds, self, TimeoutCount))
-  }
-
-  private def stopTimer(t: Cancellable): Unit = {
-    t.cancel()
   }
 
 }
